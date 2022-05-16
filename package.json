@@ -12,7 +12,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/keshavsaharia/us-census-geocoder.git"
+    "url": "git+https://github.com/keshavsaharia/census-geocoder.git"
   },
   "keywords": [
     "geocode",
