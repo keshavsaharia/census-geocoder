@@ -1,0 +1,29 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.CENSUS_GEOGRAPHY = exports.CENSUS_GEOGRAPHY_CURRENT = exports.CENSUS_BENCHMARK = exports.CENSUS_BENCHMARK_CURRENT = exports.MAX_BATCH_SIZE = exports.CENSUS_GEOCODER_URL = void 0;
+/**
+ * Endpoint for batch address geocoding with the US Census Geocoder
+ */
+//const CENSUS_GEOCODER_URL = 'https://geocoding.geo.census.gov/geocoder/locations/addressbatch'
+exports.CENSUS_GEOCODER_URL = 'https://geocoding.geo.census.gov/geocoder/';
+exports.MAX_BATCH_SIZE = 10000;
+/**
+ * Mapping between custom benchmark ID (either default "current", or "2021"/"2020")
+ * which are the only three supported options.
+ */
+exports.CENSUS_BENCHMARK_CURRENT = '4';
+exports.CENSUS_BENCHMARK = {
+    'current': exports.CENSUS_BENCHMARK_CURRENT,
+    '2021': '8',
+    '2020': '2020'
+};
+exports.CENSUS_GEOGRAPHY_CURRENT = '4';
+exports.CENSUS_GEOGRAPHY = {
+    'current': exports.CENSUS_GEOGRAPHY_CURRENT,
+    '2010': '410',
+    '2017': '417',
+    '2018': '418',
+    '2019': '419',
+    '2020': '420',
+    '2021': '421'
+};
