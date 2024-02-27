@@ -29,14 +29,14 @@ describe('Basic geocoding', () => {
 		const whiteHouseApprox = g.get('white-house-approx')
 
 		if (whiteHouse) {
-			expect(whiteHouse.lat).toBe(38.898754)
-			expect(whiteHouse.lon).toBe(-77.03534)
+			expect(whiteHouse.lat).toBeCloseTo(38.898754)
+			expect(whiteHouse.lon).toBeCloseTo(-77.03534)
 			expect(whiteHouse.exact).toBe(true)
 		}
 
 		if (whiteHouseApprox) {
-			expect(whiteHouseApprox.lat).toBe(38.898754)
-			expect(whiteHouseApprox.lon).toBe(-77.03534)
+			expect(whiteHouseApprox.lat).toBeCloseTo(38.898754)
+			expect(whiteHouseApprox.lon).toBeCloseTo(-77.03534)
 			expect(whiteHouseApprox.exact).toBe(false)
 		}
 

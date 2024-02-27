@@ -39,3 +39,11 @@ export function csvSplit(line: string, delimiter: string = COMMA): Array<string>
 
 	return split
 }
+
+export async function delay(ms: number) {
+	return new Promise((resolve) => {
+		setTimeout(() => {
+			resolve(ms)
+		}, ms)
+	})
+}

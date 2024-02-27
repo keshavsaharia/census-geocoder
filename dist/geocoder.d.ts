@@ -1,3 +1,4 @@
+import FormData from 'form-data';
 import { GeocodeAddress, GeocodeResponse, GeocodeListener, GeocodeAsyncListener } from './interface';
 /**
  * @class 	Geocoder
@@ -26,7 +27,9 @@ export default class Geocoder {
      * @desc 	Sends a batch of requests for geocoding and returns an array of responses
      * 			where there was a match.
      */
-    geocode(): Promise<Array<GeocodeResponse>>;
+    geocode(batchSize?: number): Promise<Array<GeocodeResponse>>;
+    makeRequest(csv: string, timeout?: number): Promise<Array<Array<string>>>;
+    static request(form: FormData, timeout: number): Promise<string>;
     /**
      * @func 	add
      * @desc 	Add a geocoding request for a given address, and an optional listener to handle

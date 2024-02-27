@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const axios_1 = __importDefault(require("axios"));
+const https_1 = __importDefault(require("https"));
 const form_data_1 = __importDefault(require("form-data"));
 const util_1 = require("./util");
 const constant_1 = require("./constant");
@@ -45,38 +45,43 @@ class Geocoder {
      * @desc 	Sends a batch of requests for geocoding and returns an array of responses
      * 			where there was a match.
      */
-    geocode() {
+    geocode(batchSize) {
         return __awaiter(this, void 0, void 0, function* () {
             // Need at least one item to geocode
             if (!this.hasGeocodeBatch())
                 return [];
+            if (batchSize == null)
+                batchSize = constant_1.MAX_BATCH_SIZE;
             // Get up to the max batch size from the batch queue
-            const batch = this.batch.slice(0, constant_1.MAX_BATCH_SIZE);
-            this.batch = this.batch.slice(constant_1.MAX_BATCH_SIZE);
+            const batch = this.batch.slice(0, batchSize);
+            this.batch = this.batch.slice(batchSize);
             // Generate a CSV input for the batch API
             const csv = batch.map((request) => ('"' + [
-                util_1.csvEscape(request.id),
-                request.address ? util_1.csvEscape(request.address) : '',
-                request.city ? util_1.csvEscape(request.city) : '',
-                request.state ? util_1.csvEscape(request.state) : '',
-                request.zip ? util_1.csvEscape(request.zip) : ''
+                (0, util_1.csvEscape)(request.id),
+                request.address ? (0, util_1.csvEscape)(request.address) : '',
+                request.city ? (0, util_1.csvEscape)(request.city) : '',
+                request.state ? (0, util_1.csvEscape)(request.state) : '',
+                request.zip ? (0, util_1.csvEscape)(request.zip) : ''
             ].join('","') + '"')).join('\n');
             // Generate a form to encapsulate the request
-            const form = new form_data_1.default();
-            form.append('addressFile', Buffer.from(csv), 'geocode.csv');
-            form.append('benchmark', this.benchmark);
-            if (this.geography)
-                form.append('vintage', this.geography);
-            // Make a POST request to the census geocoder endpoint
-            const response = yield axios_1.default.post(this.apiUrl, form, {
-                headers: form.getHeaders()
-            });
+            // const form = new FormData()
+            // form.append('addressFile', Buffer.from(csv), 'geocode.csv')
+            // form.append('benchmark', this.benchmark)
+            // if (this.geography)
+            // 	form.append('vintage', this.geography)
+            //
+            // // Make a POST request to the census geocoder endpoint
+            // const response = await axios.post(this.apiUrl, form, {
+            // 	headers: form.getHeaders(),
+            // 	timeout: 10000 //600000
+            // })
+            const rows = yield this.makeRequest(csv, 60000);
             // Array of responses from the CSV output
             const geoResponses = [];
             // Split the CSV output by lines
-            const rows = response.data.toString('utf-8').split('\n');
+            // const rows = response.data.toString('utf-8').split('\n')
             for (let i = 0; i < rows.length; i++) {
-                const row = util_1.csvSplit(rows[i]);
+                const row = rows[i]; //csvSplit(rows[i])
                 if (row.length > 0) {
                     // First column is always the ID
                     const id = row[0];
@@ -118,6 +123,73 @@ class Geocoder {
                 }
             }
             return geoResponses;
+        });
+    }
+    makeRequest(csv, timeout = 60000) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // Generate a form to encapsulate the request
+            const form = new form_data_1.default();
+            form.append('addressFile', Buffer.from(csv), 'geocode.csv');
+            form.append('benchmark', this.benchmark);
+            if (this.geography)
+                form.append('vintage', this.geography);
+            let retry = 0, maxRetry = 3;
+            do {
+                try {
+                    const data = yield Geocoder.request(form, timeout);
+                    // Make a POST request to the census geocoder endpoint
+                    // const response = await axios.post(this.apiUrl, form, {
+                    // 	headers: form.getHeaders(),
+                    // 	timeout
+                    // })
+                    // const data = response.data.toString('utf-8')
+                    const rows = data.split('\n');
+                    return rows.map((row) => (0, util_1.csvSplit)(row));
+                }
+                catch (error) {
+                    console.log('error ' + retry, error.toString());
+                    console.log();
+                    yield (0, util_1.delay)(timeout);
+                    retry++;
+                }
+            } while (retry < maxRetry);
+            throw {
+                code: 'RequestError',
+                csv,
+                benchmark: this.benchmark,
+                geography: this.geography,
+                retries: maxRetry,
+                timeout
+            };
+        });
+    }
+    static request(form, timeout) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => {
+                form.pipe(https_1.default.request({
+                    protocol: 'https:',
+                    port: 443,
+                    hostname: 'geocoding.geo.census.gov',
+                    path: '/geocoder/locations/addressbatch',
+                    headers: form.getHeaders(),
+                    method: 'POST',
+                    timeout
+                }, (response) => {
+                    const data = [];
+                    response.on('data', (chunk) => {
+                        data.push(chunk);
+                    });
+                    response.on('end', () => {
+                        resolve(data.join(''));
+                    });
+                    response.on('error', (error) => {
+                        reject(error);
+                    });
+                })
+                    .on('error', (error) => {
+                    reject(error);
+                }));
+            });
         });
     }
     /**
